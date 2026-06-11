@@ -1,0 +1,153 @@
+:root {
+  --paper: #f1ede4;
+  --ink: #2b2b28;
+  --vermilion: #b5482a;
+  --indigo: #3d5a80;
+  --faint: rgba(43, 43, 40, 0.45);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--paper);
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--ink);
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#game {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: var(--paper);
+  text-align: center;
+  padding: 24px;
+}
+
+.title-jp {
+  font-size: 28px;
+  letter-spacing: 14px;
+  margin-left: 14px; /* offset trailing letter-spacing */
+}
+
+h1 {
+  font-weight: normal;
+  font-size: 22px;
+  letter-spacing: 6px;
+  line-height: 1.6;
+}
+
+.rule {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--faint);
+  margin-bottom: 18px;
+}
+
+button {
+  font: inherit;
+  font-size: 15px;
+  letter-spacing: 2px;
+  background: none;
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  padding: 12px 28px;
+  min-width: 240px;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+button:active { background: var(--ink); color: var(--paper); }
+
+#join-row { display: flex; gap: 8px; }
+#join-row input {
+  font: inherit;
+  font-size: 16px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  width: 140px;
+  padding: 10px;
+  border: 1px solid var(--ink);
+  background: none;
+  text-align: center;
+  border-radius: 2px;
+}
+#join-row button { min-width: 0; }
+
+#net-status {
+  min-height: 22px;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--faint);
+  letter-spacing: 1px;
+}
+
+.hidden { display: none !important; }
+
+/* Touch pads */
+#touch-ui {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.pad {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: auto;
+}
+
+.pad-p1 { left: 0; width: 50%; }
+.pad-p2 { right: 0; width: 50%; }
+
+/* online: single player gets the full width */
+.pad.full { width: 100%; left: 0; right: 0; }
+
+/* virtual thumbsticks: ink-circle base + knob, appear where you touch */
+.stick-base {
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  margin: -55px 0 0 -55px;
+  border: 1.5px solid var(--faint);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.stick-base::after { /* second, slightly offset ring for the hand-drawn look */
+  content: "";
+  position: absolute;
+  inset: -3px 1px 1px -2px;
+  border: 1px solid var(--faint);
+  border-radius: 50%;
+  opacity: 0.5;
+}
+.stick-knob {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  left: 55px;
+  top: 55px;
+  border-radius: 50%;
+  border: 2px solid;
+}
+.pad-p1 .stick-knob { border-color: var(--vermilion); background: rgba(181, 72, 42, 0.12); }
+.pad-p2 .stick-knob { border-color: var(--indigo); background: rgba(61, 90, 128, 0.12); }
