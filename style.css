@@ -113,6 +113,7 @@ button:active { background: var(--ink); color: var(--paper); }
   top: 0;
   bottom: 0;
   pointer-events: auto;
+  overflow: hidden;
 }
 
 .pad-p1 { left: 0; width: 50%; }
@@ -121,33 +122,82 @@ button:active { background: var(--ink); color: var(--paper); }
 /* online: single player gets the full width */
 .pad.full { width: 100%; left: 0; right: 0; }
 
-/* virtual thumbsticks: ink-circle base + knob, appear where you touch */
-.stick-base {
+.leg-lines {
   position: absolute;
-  width: 110px;
-  height: 110px;
-  margin: -55px 0 0 -55px;
-  border: 1.5px solid var(--faint);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.leg-lines line {
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+}
+
+.leg-thigh,
+.leg-shin {
+  stroke: var(--ink);
+  stroke-width: 5;
+}
+
+.leg-ghost {
+  stroke: var(--faint);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 8;
+}
+
+.leg-hip,
+.leg-foot {
+  position: absolute;
+  transform: translate(-50%, -50%);
   border-radius: 50%;
   pointer-events: none;
 }
-.stick-base::after { /* second, slightly offset ring for the hand-drawn look */
+
+.leg-hip {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--ink);
+  background: var(--paper);
+}
+
+.leg-foot {
+  width: 46px;
+  height: 46px;
+  border: 3px solid;
+  background: rgba(241, 237, 228, 0.78);
+  box-shadow: 0 0 0 9px rgba(43, 43, 40, 0.05);
+}
+
+.leg-foot::after {
   content: "";
   position: absolute;
-  inset: -3px 1px 1px -2px;
-  border: 1px solid var(--faint);
+  inset: 10px 7px;
+  border-top: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
   border-radius: 50%;
-  opacity: 0.5;
 }
-.stick-knob {
-  position: absolute;
-  width: 44px;
-  height: 44px;
-  margin: -22px 0 0 -22px;
-  left: 55px;
-  top: 55px;
-  border-radius: 50%;
-  border: 2px solid;
+
+.pad-p1 .leg-foot { border-color: var(--vermilion); color: var(--vermilion); }
+.pad-p2 .leg-foot { border-color: var(--indigo); color: var(--indigo); }
+.pad.active .leg-foot { background: rgba(255, 255, 255, 0.42); }
+
+@media (max-width: 760px), (pointer: coarse) {
+  #game {
+    bottom: auto;
+    height: 58dvh;
+  }
+
+  #touch-ui {
+    top: 58dvh;
+  }
+
+  .pad {
+    background:
+      linear-gradient(to bottom, rgba(43, 43, 40, 0.12), transparent 1px),
+      rgba(241, 237, 228, 0.92);
+  }
+
+  .pad-p1:not(.full) { border-right: 1px solid rgba(43, 43, 40, 0.18); }
 }
-.pad-p1 .stick-knob { border-color: var(--vermilion); background: rgba(181, 72, 42, 0.12); }
-.pad-p2 .stick-knob { border-color: var(--indigo); background: rgba(61, 90, 128, 0.12); }

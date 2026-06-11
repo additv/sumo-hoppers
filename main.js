@@ -8,48 +8,96 @@
   const inputs = [{ a: 0, e: 0 }, { a: 0, e: 0 }];
   let mySide = 0;        // which hopper this device controls (online)
   let running = false;
+  const resetControls = [];
 
-  // ---- virtual thumbsticks --------------------------------------------------
-  // A floating stick spawns wherever the player touches their pad.
-  // x axis = leg angle (toward / away from opponent), y axis = knee
-  // (down = kick out, up = crouch). Continuous in [-1, 1].
-  const STICK_R = 55;
+  // ---- leg controls ---------------------------------------------------------
+  // Each touch pad is a small one-legged puppet. The hip stays fixed and the
+  // player drags the foot; that pose is translated into angle/extension input.
+  const CONTROL = { neutralLen: 112, minLen: 58, maxLen: 158, maxX: 120 };
 
   for (const pad of document.querySelectorAll('.pad')) {
     const p = +pad.dataset.p;
-    let pointerId = null, base = null, knob = null, ox = 0, oy = 0;
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const thigh = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    const shin = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    const ghost = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    const hip = document.createElement('div');
+    const foot = document.createElement('div');
+    const mirror = p === 0 ? 1 : -1;
+    let pointerId = null;
+    let pose = null;
 
-    function spawn(x, y) {
-      base = document.createElement('div');
-      base.className = 'stick-base';
-      knob = document.createElement('div');
-      knob.className = 'stick-knob';
-      base.appendChild(knob);
+    svg.classList.add('leg-lines');
+    thigh.classList.add('leg-thigh');
+    shin.classList.add('leg-shin');
+    ghost.classList.add('leg-ghost');
+    svg.append(ghost, thigh, shin);
+    hip.className = 'leg-hip';
+    foot.className = 'leg-foot';
+    pad.append(svg, hip, foot);
+
+    function metrics() {
       const r = pad.getBoundingClientRect();
-      ox = x; oy = y;
-      base.style.left = (x - r.left) + 'px';
-      base.style.top = (y - r.top) + 'px';
-      pad.appendChild(base);
+      const safeTop = Math.max(52, r.height * 0.25);
+      const hipX = r.width / 2;
+      const hipY = Math.min(safeTop, r.height - CONTROL.neutralLen - 28);
+      return {
+        hipX,
+        hipY,
+        minY: hipY + CONTROL.minLen * 0.45,
+        maxY: r.height - 34,
+        minX: Math.max(34, hipX - CONTROL.maxX),
+        maxX: Math.min(r.width - 34, hipX + CONTROL.maxX),
+      };
     }
 
-    function move(x, y) {
-      let dx = x - ox, dy = y - oy;
-      const d = Math.hypot(dx, dy);
-      if (d > STICK_R) { dx *= STICK_R / d; dy *= STICK_R / d; }
-      knob.style.left = (55 + dx) + 'px';
-      knob.style.top = (55 + dy) + 'px';
-      // mirror x for indigo so "toward opponent" is always pushing inward
-      const mirror = p === 0 ? 1 : -1;
-      inputs[p].a = (dx / STICK_R) * mirror;
-      inputs[p].e = dy / STICK_R;
+    function setLine(line, x1, y1, x2, y2) {
+      line.setAttribute('x1', x1);
+      line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2);
+      line.setAttribute('y2', y2);
+    }
+
+    function setPose(x, y, active = false) {
+      const m = metrics();
+      const footX = Math.max(m.minX, Math.min(m.maxX, x));
+      const footY = Math.max(m.minY, Math.min(m.maxY, y));
+      const dx = footX - m.hipX;
+      const dy = footY - m.hipY;
+      const len = Math.hypot(dx, dy) || CONTROL.neutralLen;
+      const bend = Math.min(42, Math.max(16, (CONTROL.maxLen - len) * 0.45));
+      const kneeX = m.hipX + dx * 0.52 + mirror * bend;
+      const kneeY = m.hipY + dy * 0.48 - Math.abs(dx) * 0.08;
+
+      pose = { x: footX, y: footY };
+      hip.style.left = m.hipX + 'px';
+      hip.style.top = m.hipY + 'px';
+      foot.style.left = footX + 'px';
+      foot.style.top = footY + 'px';
+      pad.classList.toggle('active', active);
+      setLine(ghost, m.hipX, m.hipY, m.hipX + mirror * 18, m.hipY + CONTROL.neutralLen);
+      setLine(thigh, m.hipX, m.hipY, kneeX, kneeY);
+      setLine(shin, kneeX, kneeY, footX, footY);
+
+      inputs[p].a = Math.max(-1, Math.min(1, (dx * mirror) / CONTROL.maxX));
+      inputs[p].e = Math.max(-1, Math.min(1, (len - CONTROL.neutralLen) / (CONTROL.maxLen - CONTROL.neutralLen)));
+    }
+
+    function resetPose() {
+      const m = metrics();
+      setPose(m.hipX + mirror * 18, m.hipY + CONTROL.neutralLen, false);
+      inputs[p].a = 0;
+      inputs[p].e = 0;
+    }
+
+    function move(clientX, clientY) {
+      const r = pad.getBoundingClientRect();
+      setPose(clientX - r.left, clientY - r.top, true);
     }
 
     function end() {
       pointerId = null;
-      if (base) base.remove();
-      base = knob = null;
-      inputs[p].a = 0;
-      inputs[p].e = 0;
+      resetPose();
     }
 
     pad.addEventListener('pointerdown', (e) => {
@@ -57,14 +105,19 @@
       e.preventDefault();
       pointerId = e.pointerId;
       pad.setPointerCapture(e.pointerId);
-      spawn(e.clientX, e.clientY);
       move(e.clientX, e.clientY);
     });
     pad.addEventListener('pointermove', (e) => {
-      if (e.pointerId === pointerId && base) move(e.clientX, e.clientY);
+      if (e.pointerId === pointerId) move(e.clientX, e.clientY);
     });
     pad.addEventListener('pointerup', (e) => { if (e.pointerId === pointerId) end(); });
     pad.addEventListener('pointercancel', (e) => { if (e.pointerId === pointerId) end(); });
+    addEventListener('resize', () => {
+      if (pointerId === null) resetPose();
+      else setPose(pose.x, pose.y, true);
+    });
+    resetPose();
+    resetControls.push(resetPose);
   }
 
   // ---- keyboard (desktop testing) -------------------------------------------
@@ -110,6 +163,8 @@
       mine.classList.remove('hidden'); mine.classList.add('full');
       theirs.classList.add('hidden');
     }
+    resetControls.forEach((resetControl) => resetControl());
+    Game.resize();
     Game.reset();
     running = true;
   }

@@ -16,18 +16,23 @@ const Game = (() => {
   const COLORS = ['#b5482a', '#3d5a80']; // vermilion, indigo
   const INK = '#2b2b28';
 
-  let view = { scale: 1, ox: 0, oy: 0 };
+  let view = { scale: 1, ox: 0, oy: 0, w: 0, h: 0 };
 
   function resize() {
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = innerWidth * dpr;
-    canvas.height = innerHeight * dpr;
+    const w = canvas.clientWidth || innerWidth;
+    const h = canvas.clientHeight || innerHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    view.scale = Math.min(innerWidth / W, innerHeight / H);
-    view.ox = (innerWidth - W * view.scale) / 2;
-    view.oy = (innerHeight - H * view.scale) / 2;
+    view.w = w;
+    view.h = h;
+    view.scale = Math.min(w / W, h / H);
+    view.ox = (w - W * view.scale) / 2;
+    view.oy = (h - H * view.scale) / 2;
   }
   addEventListener('resize', resize);
+  new ResizeObserver(resize).observe(canvas);
   resize();
 
   // ---- particles & constraints -------------------------------------------
@@ -290,7 +295,7 @@ const Game = (() => {
   function draw(roleLabel) {
     jseed = (state.t / 4 | 0) * 7 + 13; // jitter changes ~15fps, like a wobbly pencil test
     ctx.fillStyle = '#f1ede4';
-    ctx.fillRect(0, 0, innerWidth, innerHeight);
+    ctx.fillRect(0, 0, view.w, view.h);
 
     ctx.save();
     ctx.translate(view.ox, view.oy);
@@ -352,6 +357,6 @@ const Game = (() => {
     ctx.restore();
   }
 
-  return { step, draw, reset, serialize, deserialize,
+  return { step, draw, reset, resize, serialize, deserialize,
            get state() { return state; } };
 })();
