@@ -101,6 +101,24 @@ const Game = (() => {
 
   function eachPt(h, fn) { fn(h.head); fn(h.hip); fn(h.foot); }
 
+  function applyPlantTorque(h) {
+    if (h.plantX === null && h.foot.y < FLOOR - 2) return;
+    const pivotX = h.plantX ?? h.foot.x;
+    const pivotY = FLOOR;
+    // Gravity should topple a one-foot support when the body's mass is not
+    // over the planted foot. Verlet constraints alone can settle into a
+    // hanging equilibrium, so add the missing angular acceleration explicitly.
+    const comX = (h.head.x * 1.35 + h.hip.x) / 2.35;
+    const torque = Math.max(-0.028, Math.min(0.028, (pivotX - comX) * 0.00022));
+
+    for (const p of [h.head, h.hip]) {
+      const rx = p.x - pivotX;
+      const ry = p.y - pivotY;
+      p.x += torque * ry;
+      p.y -= torque * rx;
+    }
+  }
+
   function step(inputs) {
     // inputs: [{a,e},{a,e}] — a: -1 leg back / +1 leg toward opponent,
     //                          e: -1 flex knee / +1 extend knee
@@ -132,6 +150,8 @@ const Game = (() => {
         p.x += vx; p.y += vy + GRAV;
       });
     }
+
+    for (const h of s.hoppers) applyPlantTorque(h);
 
     for (let i = 0; i < ITER; i++) {
       const [a, b] = s.hoppers;
