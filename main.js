@@ -12,7 +12,7 @@
   // ---- virtual thumbsticks --------------------------------------------------
   // A floating stick spawns wherever the player touches their pad.
   // x axis = leg angle (toward / away from opponent), y axis = knee
-  // (up = kick out, down = crouch). Continuous in [-1, 1].
+  // (down = kick out, up = crouch). Continuous in [-1, 1].
   const STICK_R = 55;
 
   for (const pad of document.querySelectorAll('.pad')) {
@@ -41,7 +41,7 @@
       // mirror x for indigo so "toward opponent" is always pushing inward
       const mirror = p === 0 ? 1 : -1;
       inputs[p].a = (dx / STICK_R) * mirror;
-      inputs[p].e = -dy / STICK_R;
+      inputs[p].e = dy / STICK_R;
     }
 
     function end() {
