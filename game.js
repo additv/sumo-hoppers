@@ -10,7 +10,7 @@ const Game = (() => {
   // so host and guest (and any phone) see the same match.
   const W = 800, H = 450;
   const FLOOR = H - 60;
-  const GRAV = 0.42;
+  const GRAV = 0.48;
   const ITER = 10;
 
   const COLORS = ['#b5482a', '#3d5a80']; // vermilion, indigo
@@ -60,8 +60,8 @@ const Game = (() => {
     };
   }
 
-  const LEG_MIN = 45, LEG_MAX = 130, LEG_SPEED = 4.2;
-  const ANG_MAX = 1.2, ANG_SPEED = 0.05;
+  const LEG_MIN = 45, LEG_MAX = 138, LEG_SPEED = 5.4;
+  const ANG_MAX = 1.35, ANG_SPEED = 0.065;
   const dist = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
   const SPINE = 58;
   const HEAD_R = 16;
@@ -123,24 +123,14 @@ const Game = (() => {
 
       // verlet integrate
       eachPt(h, (p) => {
-        let vx = (p.x - p.px) * 0.97;
-        let vy = (p.y - p.py) * 0.97;
+        let vx = (p.x - p.px) * 0.985;
+        let vy = (p.y - p.py) * 0.985;
         // hard speed cap: constraint servos can otherwise pump energy
         const v = Math.hypot(vx, vy);
-        if (v > 12) { vx *= 12 / v; vy *= 12 / v; }
+        if (v > 18) { vx *= 18 / v; vy *= 18 / v; }
         p.px = p.x; p.py = p.y;
         p.x += vx; p.y += vy + GRAV;
       });
-
-      // heads are buoyant: a gentle righting force so balance is
-      // recoverable but losable (the whole game lives in this number)
-      h.head.y -= 0.32; // enough to stand tall, not enough to hover when tangled
-      // mild righting toward head-over-hips: standing is recoverable,
-      // but a committed shove still topples
-      h.head.x += (h.hip.x - h.head.x) * 0.025;
-      // and the hips seek the support point — balance is the pair's
-      // combined stance, so each body leans back over its own foot
-      h.hip.x += (h.foot.x - h.hip.x) * 0.006;
     }
 
     for (let i = 0; i < ITER; i++) {
@@ -170,10 +160,7 @@ const Game = (() => {
       constrain(a.head, b.head, 2 * HEAD_R, 1, 'space');
       constrain(a.hip, b.hip, s.hipLen, 0.5, 'space');
 
-      // a knee can't lift the foot above the hip — kills the degenerate
-      // "leg pointing skyward" tangles
       for (const h of s.hoppers) {
-        if (h.foot.y < h.hip.y - 8) h.foot.y = h.hip.y - 8;
         // hip joint limit: torso-thigh angle can't close past ~110°,
         // so a hopper can never fold head-between-legs. Enforced as a
         // minimum head-foot chord (law of cosines at the hip).
