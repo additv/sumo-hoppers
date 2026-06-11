@@ -116,7 +116,6 @@
       if (pointerId === null) resetPose();
       else setPose(pose.x, pose.y, true);
     });
-    resetPose();
     resetControls.push(resetPose);
   }
 
