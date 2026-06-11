@@ -56,6 +56,7 @@ const Game = (() => {
       head: pt(hipX - dir * 8, hipY - 57), // |(8,57)| ≈ SPINE
       hip:  pt(hipX, hipY),
       foot: pt(hipX + dir * Math.sin(ang) * len, FLOOR),
+      plantX: null,
     };
   }
 
@@ -184,10 +185,20 @@ const Game = (() => {
       for (const h of s.hoppers) {
         eachPt(h, (p) => {
           if (p.y > FLOOR) p.y = FLOOR;
-          // high-friction contact band: anything touching (or nearly
-          // touching) the ground is held static — applied every iteration,
-          // this converges to no slide at all
-          if (p.y >= FLOOR - 2) p.x += (p.px - p.x) * 0.6;
+          if (p === h.foot) {
+            if (p.y >= FLOOR - 2) {
+              if (h.plantX === null) h.plantX = p.x;
+              // Feet use static friction: once planted, the contact point
+              // stays put and the body has to rotate/fall around it.
+              p.x += (h.plantX - p.x) * 0.92;
+              p.px = p.x;
+            } else {
+              h.plantX = null;
+            }
+          } else if (p.y >= FLOOR - 2) {
+            // Non-foot floor contact still bleeds sideways energy.
+            p.x += (p.px - p.x) * 0.6;
+          }
           // walls, with friction so contact bleeds energy instead of storing it
           if (p.x < 20) { p.x = 20; p.y += (p.py - p.y) * 0.5; }
           if (p.x > W - 20) { p.x = W - 20; p.y += (p.py - p.y) * 0.5; }
