@@ -89,6 +89,7 @@ fi
 
 echo "Pushing $BRANCH to $REPO..."
 git push origin "$BRANCH"
+head_sha="$(git rev-parse HEAD)"
 
 echo "Ensuring GitHub Pages uses workflow deployments..."
 if ! gh api "repos/$REPO/pages" >/dev/null 2>&1; then
@@ -103,7 +104,7 @@ fi
 echo "Waiting for workflow '$WORKFLOW'..."
 run_id=""
 for _ in {1..20}; do
-  run_id="$(gh run list --repo "$REPO" --workflow "$WORKFLOW" --branch "$BRANCH" --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
+  run_id="$(gh run list --repo "$REPO" --workflow "$WORKFLOW" --branch "$BRANCH" --limit 10 --json databaseId,headSha --jq ".[] | select(.headSha == \"$head_sha\") | .databaseId" | head -n 1)"
   if [[ -n "$run_id" ]]; then
     break
   fi
@@ -111,7 +112,7 @@ for _ in {1..20}; do
 done
 
 if [[ -z "$run_id" ]]; then
-  echo "Could not find a workflow run for '$WORKFLOW' on '$BRANCH'." >&2
+  echo "Could not find a workflow run for '$WORKFLOW' on '$BRANCH' at $head_sha." >&2
   exit 1
 fi
 
